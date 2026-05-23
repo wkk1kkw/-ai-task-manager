@@ -1,8 +1,8 @@
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
-VALID_STATUSES = {"todo", "in_progress", "review", "done"}
-VALID_PRIORITIES = {"low", "medium", "high"}
+VALID_STATUSES = frozenset({"todo", "in_progress", "review", "done"})
+VALID_PRIORITIES = frozenset({"low", "medium", "high"})
 
 
 @dataclass
@@ -69,7 +69,8 @@ class Task:
 
     @classmethod
     def from_dict(cls, data: dict) -> "Task":
-        notes_data = data.pop("notes", [])
-        task = cls(**data)
+        notes_data = data.get("notes", [])
+        task_data = {k: v for k, v in data.items() if k != "notes"}
+        task = cls(**task_data)
         task.notes = [Note.from_dict(n) for n in notes_data]
         return task

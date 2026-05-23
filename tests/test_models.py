@@ -1,4 +1,5 @@
 import json
+import pytest
 from datetime import datetime
 from models.project import Project
 from models.task import Task, Note
@@ -23,7 +24,6 @@ class TestProject:
         assert restored.status == p.status
 
     def test_project_status_validation(self):
-        import pytest
         with pytest.raises(ValueError):
             Project(name="x", title="x", local_path="/x", status="invalid")
 
@@ -49,11 +49,22 @@ class TestTask:
         assert restored.notes[0].content == "a note"
 
     def test_task_status_validation(self):
-        import pytest
         with pytest.raises(ValueError):
             Task(id="t1", title="x", project="p", status="invalid_status")
 
     def test_task_priority_validation(self):
-        import pytest
         with pytest.raises(ValueError):
             Task(id="t1", title="x", project="p", priority="invalid")
+
+
+class TestNote:
+    def test_note_roundtrip(self):
+        n = Note(author="user", content="hello")
+        d = n.to_dict()
+        restored = Note.from_dict(d)
+        assert restored.author == "user"
+        assert restored.content == "hello"
+
+    def test_note_auto_timestamp(self):
+        n = Note(author="user", content="x")
+        assert n.timestamp != ""

@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
-VALID_STATUSES = {"active", "paused", "completed", "archived"}
+VALID_STATUSES = frozenset({"active", "paused", "completed", "archived"})
 
 
 @dataclass
