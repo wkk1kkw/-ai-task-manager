@@ -1,4 +1,5 @@
 import click
+from pathlib import Path
 from storage.json_store import JsonStore
 from models.project import Project
 
@@ -18,11 +19,25 @@ def project_group():
 @click.option("--title", prompt="项目标题", help="项目标题")
 @click.option("--desc", default="", help="项目描述")
 @click.option("--path", prompt="本地代码路径", help="本地代码目录路径")
-def create(name, title, desc, path):
+@click.option("--init/--no-init", default=False, help="是否初始化目录结构和 Git 仓库")
+def create(name, title, desc, path, init):
     """创建新项目"""
     store = get_store()
     p = Project(name=name, title=title, description=desc, local_path=path)
     store.save_project(p)
+    if init:
+        proj_path = Path(path)
+        proj_path.mkdir(parents=True, exist_ok=True)
+        (proj_path / "README.md").write_text(
+            f"# {title}\n\n{desc}\n\n## Getting Started\n\n", encoding="utf-8"
+        )
+        import subprocess
+        try:
+            subprocess.run(["git", "init"], cwd=str(proj_path), capture_output=True)
+            click.echo(f"   Git 仓库已初始化")
+        except FileNotFoundError:
+            pass
+        click.echo(f"   项目目录已创建: {proj_path}")
     click.echo(f"✅ 项目 '{name}' ({title}) 创建成功")
 
 
