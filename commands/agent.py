@@ -1,5 +1,7 @@
+from datetime import datetime, timezone
 import click
 from storage.json_store import JsonStore
+from storage.path_utils import project_path, context_dir
 from utils.console import echo
 
 
@@ -23,24 +25,32 @@ def assign(project_name, task_id, agent, agent_type):
     store = get_store()
     project = store.load_project(project_name)
     if not project:
-        echo(f"项目 '{project_name}' 不存在")
-        return
+        raise click.ClickException(f"项目 '{project_name}' 不存在")
     tasks = store.load_tasks(project_name)
     if not tasks:
-        echo(f"项目 '{project_name}' 下没有任务")
-        return
-    try:
-        t = tasks[int(task_id)]
-    except (IndexError, ValueError):
-        echo(f"任务 ID '{task_id}' 不存在")
-        return
+        raise click.ClickException(f"项目 '{project_name}' 下没有任务")
+    t = next((t for t in tasks if t.id == task_id), None)
+    if not t:
+        raise click.ClickException(f"任务 ID '{task_id}' 不存在")
     t.assigned_to = agent
     t.assigned_agent_type = agent_type
     if t.status == "todo":
         t.status = "in_progress"
-    import datetime
-    t.updated_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    t.updated_at = datetime.now(timezone.utc).isoformat()
     store.save_tasks(project_name, tasks)
+
+    # Write context file
+    ctx_dir = context_dir(project_path(project_name))
+    ctx_file = ctx_dir / f"{task_id}.md"
+    ctx_file.write_text(
+        f"# Task: {t.title}\n\n"
+        f"Description: {t.description}\n"
+        f"Assigned to: {agent} ({agent_type})\n"
+        f"Status: {t.status}\n"
+        f"Related files: {', '.join(t.related_files)}\n",
+        encoding="utf-8"
+    )
+
     echo(f"任务 '{t.title}' 已分配给 {agent} ({agent_type})")
     echo(f"   任务上下文请查看: context/{task_id}.md")
 
@@ -53,8 +63,7 @@ def status(project_name):
     if project_name:
         projects = [p for p in store.list_projects() if p.name == project_name]
         if not projects:
-            echo(f"项目 '{project_name}' 不存在")
-            return
+            raise click.ClickException(f"项目 '{project_name}' 不存在")
     else:
         projects = store.list_projects()
     if not projects:

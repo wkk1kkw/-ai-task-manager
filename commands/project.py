@@ -73,8 +73,7 @@ def update(name, status, title):
     store = get_store()
     p = store.load_project(name)
     if not p:
-        echo(f"❌ 项目 '{name}' 不存在")
-        return
+        raise click.ClickException(f"项目 '{name}' 不存在")
     p.status = status
     if title:
         p.title = title
@@ -91,4 +90,4 @@ def delete(name):
     if store.delete_project(name):
         echo(f"✅ 项目 '{name}' 已删除")
     else:
-        echo(f"❌ 项目 '{name}' 不存在")
+        raise click.ClickException(f"项目 '{name}' 不存在")

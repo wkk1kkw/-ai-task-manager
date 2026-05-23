@@ -1,4 +1,3 @@
-import builtins
 import click
 import webbrowser
 from utils.console import echo
@@ -36,8 +35,7 @@ def generate(project_name, open_browser):
     if project_name:
         project = store.load_project(project_name)
         if not project:
-            echo(f"项目 '{project_name}' 不存在")
-            return
+            raise click.ClickException(f"项目 '{project_name}' 不存在")
         tasks = store.load_tasks(project_name)
         html = template.render(
             project=project.to_dict(),
@@ -47,7 +45,7 @@ def generate(project_name, open_browser):
         out_dir = rep_dir / project_name
         out_dir.mkdir(parents=True, exist_ok=True)
         out_path = out_dir / "kanban.html"
-        with builtins.open(out_path, "w", encoding="utf-8") as f:
+        with open(out_path, "w", encoding="utf-8") as f:
             f.write(html)
         echo(f"看板已生成: {out_path}")
         if open_browser:
@@ -60,7 +58,7 @@ def generate(project_name, open_browser):
             is_global=True
         )
         out_path = rep_dir / "index.html"
-        with builtins.open(out_path, "w", encoding="utf-8") as f:
+        with open(out_path, "w", encoding="utf-8") as f:
             f.write(html)
         echo(f"全局看板已生成: {out_path}")
         for p in projects:
@@ -72,16 +70,16 @@ def generate(project_name, open_browser):
             )
             p_dir = rep_dir / p.name
             p_dir.mkdir(parents=True, exist_ok=True)
-            with builtins.open(p_dir / "kanban.html", "w", encoding="utf-8") as f:
+            with open(p_dir / "kanban.html", "w", encoding="utf-8") as f:
                 f.write(ph)
         echo(f"共 {len(projects)} 个项目看板已同步更新")
         if open_browser:
             webbrowser.open(str(out_path.resolve()))
 
 
-@report_group.command()
+@report_group.command(name="open")
 @click.argument("project_name", required=False, default=None)
-def open(project_name):
+def cmd_open(project_name):
     """生成并打开看板"""
     ctx = click.get_current_context()
     ctx.invoke(generate, project_name=project_name, open_browser=True)

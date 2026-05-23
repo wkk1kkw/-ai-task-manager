@@ -1,3 +1,5 @@
+import uuid
+from datetime import datetime, timezone
 import click
 from storage.json_store import JsonStore
 from utils.console import echo
@@ -25,10 +27,9 @@ def add(project_name, title, desc, priority):
     store = get_store()
     project = store.load_project(project_name)
     if not project:
-        echo(f"项目 '{project_name}' 不存在")
-        return
+        raise click.ClickException(f"项目 '{project_name}' 不存在")
     tasks = store.load_tasks(project_name)
-    task_id = str(len(tasks))
+    task_id = uuid.uuid4().hex[:8]
     t = Task(id=task_id, title=title, description=desc,
              priority=priority, project=project_name)
     tasks.append(t)
@@ -44,8 +45,7 @@ def list_tasks(project_name):
     store = get_store()
     project = store.load_project(project_name)
     if not project:
-        echo(f"项目 '{project_name}' 不存在")
-        return
+        raise click.ClickException(f"项目 '{project_name}' 不存在")
     tasks = store.load_tasks(project_name)
     if not tasks:
         echo(f"项目 '{project_name}' 下没有任务")
@@ -75,21 +75,16 @@ def update(project_name, task_id, status, title):
     store = get_store()
     tasks = store.load_tasks(project_name)
     if not tasks:
-        echo(f"项目 '{project_name}' 不存在或没有任务")
-        return
-    try:
-        t = tasks[int(task_id)]
-    except (IndexError, ValueError):
-        echo(f"任务 ID '{task_id}' 不存在")
-        return
+        raise click.ClickException(f"项目 '{project_name}' 不存在或没有任务")
+    t = next((t for t in tasks if t.id == task_id), None)
+    if not t:
+        raise click.ClickException(f"任务 ID '{task_id}' 不存在")
     t.status = status
     if title:
         t.title = title
     if status == "done":
-        import datetime
-        t.completed_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
-    import datetime
-    t.updated_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
+        t.completed_at = datetime.now(timezone.utc).isoformat()
+    t.updated_at = datetime.now(timezone.utc).isoformat()
     store.save_tasks(project_name, tasks)
     store.update_progress(project_name)
     echo(f"任务 '{t.title}' 已更新为 {status}")
@@ -104,13 +99,11 @@ def delete(project_name, task_id):
     store = get_store()
     tasks = store.load_tasks(project_name)
     if not tasks:
-        echo(f"项目 '{project_name}' 不存在或没有任务")
-        return
-    try:
-        t = tasks.pop(int(task_id))
-    except (IndexError, ValueError):
-        echo(f"任务 ID '{task_id}' 不存在")
-        return
+        raise click.ClickException(f"项目 '{project_name}' 不存在或没有任务")
+    t = next((t for t in tasks if t.id == task_id), None)
+    if not t:
+        raise click.ClickException(f"任务 ID '{task_id}' 不存在")
+    tasks.remove(t)
     store.save_tasks(project_name, tasks)
     store.update_progress(project_name)
     echo(f"任务 '{t.title}' 已删除")
@@ -125,16 +118,12 @@ def note(project_name, task_id, text):
     store = get_store()
     tasks = store.load_tasks(project_name)
     if not tasks:
-        echo(f"项目 '{project_name}' 不存在或没有任务")
-        return
-    try:
-        t = tasks[int(task_id)]
-    except (IndexError, ValueError):
-        echo(f"任务 ID '{task_id}' 不存在")
-        return
+        raise click.ClickException(f"项目 '{project_name}' 不存在或没有任务")
+    t = next((t for t in tasks if t.id == task_id), None)
+    if not t:
+        raise click.ClickException(f"任务 ID '{task_id}' 不存在")
     from models.task import Note
     t.notes.append(Note(author="user", content=text))
-    import datetime
-    t.updated_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    t.updated_at = datetime.now(timezone.utc).isoformat()
     store.save_tasks(project_name, tasks)
     echo(f"笔记已添加到任务 '{t.title}'")
