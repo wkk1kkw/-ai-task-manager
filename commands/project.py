@@ -1,5 +1,6 @@
 import click
 from pathlib import Path
+from utils.console import echo
 from storage.json_store import JsonStore
 from models.project import Project
 
@@ -34,11 +35,11 @@ def create(name, title, desc, path, init):
         import subprocess
         try:
             subprocess.run(["git", "init"], cwd=str(proj_path), capture_output=True)
-            click.echo(f"   Git 仓库已初始化")
+            echo(f"   Git 仓库已初始化")
         except FileNotFoundError:
             pass
-        click.echo(f"   项目目录已创建: {proj_path}")
-    click.echo(f"✅ 项目 '{name}' ({title}) 创建成功")
+        echo(f"   项目目录已创建: {proj_path}")
+    echo(f"✅ 项目 '{name}' ({title}) 创建成功")
 
 
 @project_group.command(name="list")
@@ -47,19 +48,19 @@ def list_projects():
     store = get_store()
     projects = store.list_projects()
     if not projects:
-        click.echo("📭 没有项目")
+        echo("📭 没有项目")
         return
-    click.echo(f"\n📋 共 {len(projects)} 个项目:\n")
+    echo(f"\n📋 共 {len(projects)} 个项目:\n")
     for p in projects:
         status_icon = {"active": "🟢", "paused": "🟡", "completed": "✅", "archived": "📦"}
         icon = status_icon.get(p.status, "⚪")
         bar_len = 20
         filled = int(p.progress * bar_len)
         bar = "█" * filled + "░" * (bar_len - filled)
-        click.echo(f"  {icon} {p.title} ({p.name})")
-        click.echo(f"     状态: {p.status}  进度: [{bar}] {int(p.progress*100)}%")
-        click.echo(f"     路径: {p.local_path}")
-        click.echo()
+        echo(f"  {icon} {p.title} ({p.name})")
+        echo(f"     状态: {p.status}  进度: [{bar}] {int(p.progress*100)}%")
+        echo(f"     路径: {p.local_path}")
+        echo()
 
 
 @project_group.command()
@@ -72,13 +73,13 @@ def update(name, status, title):
     store = get_store()
     p = store.load_project(name)
     if not p:
-        click.echo(f"❌ 项目 '{name}' 不存在")
+        echo(f"❌ 项目 '{name}' 不存在")
         return
     p.status = status
     if title:
         p.title = title
     store.save_project(p)
-    click.echo(f"✅ 项目 '{name}' 已更新 (状态: {status})")
+    echo(f"✅ 项目 '{name}' 已更新 (状态: {status})")
 
 
 @project_group.command()
@@ -88,6 +89,6 @@ def delete(name):
     """删除项目"""
     store = get_store()
     if store.delete_project(name):
-        click.echo(f"✅ 项目 '{name}' 已删除")
+        echo(f"✅ 项目 '{name}' 已删除")
     else:
-        click.echo(f"❌ 项目 '{name}' 不存在")
+        echo(f"❌ 项目 '{name}' 不存在")

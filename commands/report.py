@@ -1,6 +1,7 @@
 import builtins
 import click
 import webbrowser
+from utils.console import echo
 from pathlib import Path
 from jinja2 import Environment, FileSystemLoader
 from storage.json_store import JsonStore
@@ -35,7 +36,7 @@ def generate(project_name, open_browser):
     if project_name:
         project = store.load_project(project_name)
         if not project:
-            click.echo(f"项目 '{project_name}' 不存在")
+            echo(f"项目 '{project_name}' 不存在")
             return
         tasks = store.load_tasks(project_name)
         html = template.render(
@@ -48,7 +49,7 @@ def generate(project_name, open_browser):
         out_path = out_dir / "kanban.html"
         with builtins.open(out_path, "w", encoding="utf-8") as f:
             f.write(html)
-        click.echo(f"看板已生成: {out_path}")
+        echo(f"看板已生成: {out_path}")
         if open_browser:
             webbrowser.open(str(out_path.resolve()))
     else:
@@ -61,7 +62,7 @@ def generate(project_name, open_browser):
         out_path = rep_dir / "index.html"
         with builtins.open(out_path, "w", encoding="utf-8") as f:
             f.write(html)
-        click.echo(f"全局看板已生成: {out_path}")
+        echo(f"全局看板已生成: {out_path}")
         for p in projects:
             tasks = store.load_tasks(p.name)
             ph = template.render(
@@ -73,7 +74,7 @@ def generate(project_name, open_browser):
             p_dir.mkdir(parents=True, exist_ok=True)
             with builtins.open(p_dir / "kanban.html", "w", encoding="utf-8") as f:
                 f.write(ph)
-        click.echo(f"共 {len(projects)} 个项目看板已同步更新")
+        echo(f"共 {len(projects)} 个项目看板已同步更新")
         if open_browser:
             webbrowser.open(str(out_path.resolve()))
 

@@ -1,5 +1,6 @@
 import click
 from storage.json_store import JsonStore
+from utils.console import echo
 from models.task import Task
 
 
@@ -24,7 +25,7 @@ def add(project_name, title, desc, priority):
     store = get_store()
     project = store.load_project(project_name)
     if not project:
-        click.echo(f"项目 '{project_name}' 不存在")
+        echo(f"项目 '{project_name}' 不存在")
         return
     tasks = store.load_tasks(project_name)
     task_id = str(len(tasks))
@@ -33,7 +34,7 @@ def add(project_name, title, desc, priority):
     tasks.append(t)
     store.save_tasks(project_name, tasks)
     store.update_progress(project_name)
-    click.echo(f"任务 '{title}' 已添加到项目 '{project_name}' (ID: {task_id})")
+    echo(f"任务 '{title}' 已添加到项目 '{project_name}' (ID: {task_id})")
 
 
 @task_group.command(name="list")
@@ -43,24 +44,24 @@ def list_tasks(project_name):
     store = get_store()
     project = store.load_project(project_name)
     if not project:
-        click.echo(f"项目 '{project_name}' 不存在")
+        echo(f"项目 '{project_name}' 不存在")
         return
     tasks = store.load_tasks(project_name)
     if not tasks:
-        click.echo(f"项目 '{project_name}' 下没有任务")
+        echo(f"项目 '{project_name}' 下没有任务")
         return
     priority_icon = {"high": "[高]", "medium": "[中]", "low": "[低]"}
     status_icon = {"todo": "[待办]", "in_progress": "[进行中]", "review": "[审查]", "done": "[完成]"}
-    click.echo(f"\n项目 '{project.title}' 的任务列表:\n")
+    echo(f"\n项目 '{project.title}' 的任务列表:\n")
     for t in tasks:
         pi = priority_icon.get(t.priority, "")
         si = status_icon.get(t.status, "")
         agent = f"  [负责人: {t.assigned_to}]" if t.assigned_to else ""
-        click.echo(f"  [{t.id}] {si} {t.title} {pi}{agent}")
-        click.echo(f"       状态: {t.status}")
+        echo(f"  [{t.id}] {si} {t.title} {pi}{agent}")
+        echo(f"       状态: {t.status}")
         if t.related_files:
-            click.echo(f"       关联文件: {', '.join(t.related_files)}")
-        click.echo()
+            echo(f"       关联文件: {', '.join(t.related_files)}")
+        echo()
 
 
 @task_group.command()
@@ -74,12 +75,12 @@ def update(project_name, task_id, status, title):
     store = get_store()
     tasks = store.load_tasks(project_name)
     if not tasks:
-        click.echo(f"项目 '{project_name}' 不存在或没有任务")
+        echo(f"项目 '{project_name}' 不存在或没有任务")
         return
     try:
         t = tasks[int(task_id)]
     except (IndexError, ValueError):
-        click.echo(f"任务 ID '{task_id}' 不存在")
+        echo(f"任务 ID '{task_id}' 不存在")
         return
     t.status = status
     if title:
@@ -91,7 +92,7 @@ def update(project_name, task_id, status, title):
     t.updated_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
     store.save_tasks(project_name, tasks)
     store.update_progress(project_name)
-    click.echo(f"任务 '{t.title}' 已更新为 {status}")
+    echo(f"任务 '{t.title}' 已更新为 {status}")
 
 
 @task_group.command()
@@ -103,16 +104,16 @@ def delete(project_name, task_id):
     store = get_store()
     tasks = store.load_tasks(project_name)
     if not tasks:
-        click.echo(f"项目 '{project_name}' 不存在或没有任务")
+        echo(f"项目 '{project_name}' 不存在或没有任务")
         return
     try:
         t = tasks.pop(int(task_id))
     except (IndexError, ValueError):
-        click.echo(f"任务 ID '{task_id}' 不存在")
+        echo(f"任务 ID '{task_id}' 不存在")
         return
     store.save_tasks(project_name, tasks)
     store.update_progress(project_name)
-    click.echo(f"任务 '{t.title}' 已删除")
+    echo(f"任务 '{t.title}' 已删除")
 
 
 @task_group.command()
@@ -124,16 +125,16 @@ def note(project_name, task_id, text):
     store = get_store()
     tasks = store.load_tasks(project_name)
     if not tasks:
-        click.echo(f"项目 '{project_name}' 不存在或没有任务")
+        echo(f"项目 '{project_name}' 不存在或没有任务")
         return
     try:
         t = tasks[int(task_id)]
     except (IndexError, ValueError):
-        click.echo(f"任务 ID '{task_id}' 不存在")
+        echo(f"任务 ID '{task_id}' 不存在")
         return
     from models.task import Note
     t.notes.append(Note(author="user", content=text))
     import datetime
     t.updated_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
     store.save_tasks(project_name, tasks)
-    click.echo(f"笔记已添加到任务 '{t.title}'")
+    echo(f"笔记已添加到任务 '{t.title}'")
